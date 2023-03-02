@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+
+  backend:
+    build: ./backend
+    ports:
+      - 8004:8000
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - mongo
+
+  worker:
+    build: ./backend
+    command: celery --app=application.worker.celery worker --loglevel=info
+    environment:
+      - API_KEY=f8ffcebe-5144-4dbf-89f8-ae2ef0702a49
+      - MONGODB_URL=mongodb://mongo:27017
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
+      - mongo
+
+  front:
+    build: ./front
+    ports:
+      - 8003:3000
+    environment:
+      - NUXT_PORT=3000
+      - API_URL=http://127.0.0.1:8004
+    depends_on:
+      - backend
+
+  redis:
+    image: redis:6-alpine
+
+  mongo:
+    image: mvertes/alpine-mongo
